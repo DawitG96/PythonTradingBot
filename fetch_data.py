@@ -2,8 +2,9 @@ import requests
 import pandas as pd
 import json
 import os
-from dotenv import load_dotenv
 import time
+from dotenv import load_dotenv
+import sys
 
 # Carica variabili da .env
 load_dotenv()
@@ -12,21 +13,15 @@ EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 BASE_URL = "https://api-capital.backend-capital.com"
 
-EPICS = os.getenv("EPICS").split(",")  # Lista EPIC separati da virgola
-RESOLUTIONS = os.getenv("RESOLUTIONS").split(",")  # Timeframe disponibili
+EPICS = os.getenv("EPICS").split(",")
+RESOLUTIONS = os.getenv("RESOLUTIONS").split(",")
 
-HEADERS = {
-    "X-CAP-API-KEY": API_KEY,
-    "Content-Type": "application/json"
-}
-
+HEADERS = {"X-CAP-API-KEY": API_KEY, "Content-Type": "application/json"}
 SESSION_TOKEN = None
 
 def start_new_session():
-    """Autenticazione API per ottenere CST e SECURITY_TOKEN."""
     global SESSION_TOKEN, SECURITY_TOKEN
     url = f"{BASE_URL}/api/v1/session"
-
     payload = json.dumps({"identifier": EMAIL, "password": PASSWORD})
     response = requests.post(url, headers=HEADERS, data=payload)
 
@@ -35,14 +30,12 @@ def start_new_session():
         SECURITY_TOKEN = response.headers.get("X-SECURITY-TOKEN")
         HEADERS["CST"] = SESSION_TOKEN
         HEADERS["X-SECURITY-TOKEN"] = SECURITY_TOKEN
-        print(f"✅ Autenticazione OK! CST: {SESSION_TOKEN[:10]}... | SEC: {SECURITY_TOKEN[:10]}...")
     else:
         print(f"❌ ERRORE {response.status_code}: {response.text}")
+        sys.exit(1)
 
 def fetch_historical_data(epic, resolution, max_bars=1000):
-    """Scarica lo storico massimo possibile per un EPIC in un certo timeframe."""
     url = f"{BASE_URL}/api/v1/prices/{epic}?resolution={resolution}&max={max_bars}"
-
     response = requests.get(url, headers=HEADERS)
 
     if response.status_code == 200:
@@ -54,23 +47,18 @@ def fetch_historical_data(epic, resolution, max_bars=1000):
         print(f"❌ Errore EPIC {epic} ({resolution}): {response.json()}")
         return None
 
-def build_dataset():
-    """Scarica e salva i dati per tutti gli EPIC e risoluzioni."""
+def process_epic(epic):
     os.makedirs("datasets", exist_ok=True)
-
-    for epic in EPICS:
-        for resolution in RESOLUTIONS:
-            print(f"\n📊 Scaricando dati per {epic} ({resolution})...")
-
-            df = fetch_historical_data(epic, resolution, max_bars=1000)
-
-            if df is not None:
-                filename = f"datasets/{epic}_{resolution}.csv"
-                df.to_csv(filename, index=False)
-                print(f"✅ Dati salvati in {filename}")
-
-            time.sleep(2)  # Evitiamo limiti API
+    for resolution in RESOLUTIONS:
+        print(f"📊 Scaricando dati per {epic} ({resolution})...")
+        df = fetch_historical_data(epic, resolution)
+        if df is not None:
+            filename = f"datasets/{epic}_{resolution}.csv"
+            df.to_csv(filename, index=False)
+            print(f"✅ Salvato {filename}")
+        time.sleep(2)
 
 if __name__ == "__main__":
     start_new_session()
-    build_dataset()
+    epic = sys.argv[1]  # Riceve l'EPIC come argomento
+    process_epic(epic)
