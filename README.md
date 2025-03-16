@@ -1,1 +1,1 @@
-# Capital.com-NodejsTradingBot
+# Capital.com-PythonTradingBot
