@@ -8,8 +8,5 @@ IFS=',' read -r -a epic_array <<< "$EPICS"
 
 # Lancia fetch_data.py per ciascun EPIC
 for epic in "${epic_array[@]}"; do
-    python3 fetch_data.py "$epic" &
+    python3 src/fetch_data.py "$epic"
 done
-
-# Aspetta la fine di tutti i processi
-wait
