@@ -1,6 +1,5 @@
 import requests
 import os
-import json
 import pandas as pd
 import datetime
 from dotenv import load_dotenv
