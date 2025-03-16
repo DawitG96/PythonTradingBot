@@ -3,6 +3,7 @@ import json
 import time
 import requests
 import pandas as pd
+import glob
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 
@@ -108,6 +109,54 @@ def process_data(epic, resolution, to_date):
 
         time.sleep(0.1)  # Rispetta il rate limit
 
+def remove_duplicates_from_csv(directory="datasets"):
+    """
+    Rimuove le righe duplicate da tutti i file CSV nella directory specificata.
+    Sovrascrive i file originali.
+    
+    Args:
+        directory (str): La directory contenente i file CSV
+    """
+    print("\n🔍 Inizio pulizia dei file CSV da righe duplicate...")
+    
+    # Trova tutti i file CSV nella directory
+    csv_files = glob.glob(os.path.join(directory, "*.csv"))
+    
+    if not csv_files:
+        print(f"❌ Nessun file CSV trovato in {directory}.")
+        return
+    
+    print(f"📊 Trovati {len(csv_files)} file CSV da elaborare.")
+    
+    for csv_file in csv_files:
+        try:
+            # Leggi il file CSV
+            print(f"🔄 Elaborazione di {csv_file}...")
+            df = pd.read_csv(csv_file)
+            
+            # Conta le righe prima della rimozione dei duplicati
+            rows_before = len(df)
+            
+            # Rimuovi le righe duplicate
+            df = df.drop_duplicates()
+            
+            # Conta le righe dopo la rimozione dei duplicati
+            rows_after = len(df)
+            duplicates_removed = rows_before - rows_after
+            
+            if duplicates_removed > 0:
+                # Sovrascrivi il file originale
+                df.to_csv(csv_file, index=False)
+                print(f"✅ Rimosse {duplicates_removed} righe duplicate da {csv_file}")
+            else:
+                print(f"✅ Nessuna riga duplicata trovata in {csv_file}")
+            
+        except Exception as e:
+            print(f"❌ Errore nell'elaborazione di {csv_file}: {str(e)}")
+    
+    print("🏁 Pulizia completata!")
+
+    
 def main():
     """Scarica i dati alternando gli EPIC"""
     start_new_session()
@@ -124,6 +173,8 @@ def main():
 
         if completed == len(EPICS) * len(RESOLUTIONS):
             break
+    remove_duplicates_from_csv()
+
 
 if __name__ == "__main__":
     main()
