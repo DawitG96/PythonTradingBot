@@ -60,7 +60,7 @@ class Database:
 # The database will be deleted after the test
 # The data are taken from the OANDA API and the News API and saved in the database
 if __name__ == "__main__":
-    db = Database("test.db", ["EUR_USD", "GBP_USD"])
+    db = Database(":memory:", ["EUR_USD", "GBP_USD"])
 
     data = [
         {
@@ -115,6 +115,3 @@ if __name__ == "__main__":
         ('2021-10-01T00:00:00', 'CNN', 'John Doe', 'Title 1', 'Description 1', 'http://www.example.com', 'http://www.example.com/image.jpg', 'Content 1'),
         ('2021-10-02T00:00:00', 'BBC', 'Jane Doe', 'Title 2', 'Description 2', 'http://www.example.com', 'http://www.example.com/image.jpg', 'Content 2')
     ]
-
-    import os
-    os.remove("test.db")
