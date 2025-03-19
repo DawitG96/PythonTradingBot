@@ -64,5 +64,4 @@ arg = argparse.ArgumentParser(description="Bot di trading")
 #arguments = arg.parse_args()
 
 database = Database(DB_HOST)
-capital = CapitalDownloader(database, CAPITAL_APIKEY)
 fetch_data(database)

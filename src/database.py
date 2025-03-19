@@ -8,11 +8,9 @@ class Database:
         self.db_name = db_name
         self.conn = sqlite3.connect(db_name)
         self.cursor = self.conn.cursor()
-            
-        #resolution,snapshotTime,snapshotTimeUTC,openPrice,closePrice,highPrice,lowPrice,lastTradedVolume
-        self.cursor.execute(f"CREATE TABLE IF NOT EXISTS historical_data (epic TEXT, resolution TEXT, snapshotTimeUTC TEXT, openBid REAL, openAsk REAL, highBid REAL, highAsk REAL, lowBid REAL, lowAsk REAL, closeBid REAL, closeAsk REAL, lastTradedVolume INTEGER, PRIMARY KEY (epic, resolution, snapshotTimeUTC))")
 
-        #source,author,title,description,url,urlToImage,publishedAt,content
+        self.cursor.execute(f"CREATE TABLE IF NOT EXISTS historical_data (epic TEXT, resolution TEXT, snapshotTimeUTC TEXT, openBid REAL, openAsk REAL, highBid REAL, highAsk REAL, lowBid REAL, lowAsk REAL, closeBid REAL, closeAsk REAL, lastTradedVolume INTEGER, PRIMARY KEY (epic, resolution, snapshotTimeUTC))")
+        self.cursor.execute(f"CREATE TABLE IF NOT EXISTS markets (epic TEXT PRIMARY KEY, instrumentType TEXT, instrumentName TEXT)")
         self.cursor.execute(f"CREATE TABLE IF NOT EXISTS news (publishedAt TEXT, source TEXT, author TEXT, title TEXT, description TEXT, url TEXT, urlToImage TEXT, content TEXT, PRIMARY KEY (publishedAt, source))")
         self.conn.commit()
 
@@ -37,6 +35,17 @@ class Database:
                 d["lastTradedVolume"]
             ))
         self.cursor.executemany(f"INSERT OR IGNORE INTO historical_data (epic, resolution, snapshotTimeUTC, openBid, openAsk, highBid, highAsk, lowBid, lowAsk, closeBid, closeAsk, lastTradedVolume) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", dataOk)
+        self.conn.commit()
+
+    def save_market_array(self, data):
+        dataOk = []
+        for d in data:
+            dataOk.append((
+                d["epic"],
+                d["instrumentType"],
+                d["instrumentName"]
+            ))
+        self.cursor.executemany(f"INSERT OR IGNORE INTO markets (epic, instrumentType, instrumentName) VALUES (?, ?, ?)", dataOk)
         self.conn.commit()
 
     def save_news_array(self, data):
