@@ -64,6 +64,9 @@ class Database:
         self.cursor.executemany(f"INSERT OR IGNORE INTO news (publishedAt, source, author, title, description, url, urlToImage, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", dataOk)
         self.conn.commit()
 
+    def get_least_recent_date(self, epic, resolution):
+        self.cursor.execute(f"SELECT MIN(snapshotTimeUTC) FROM historical_data WHERE epic = ? AND resolution = ?", (epic, resolution))
+        return self.cursor.fetchone()[0]
 
 
 # This test will create a database with two tables: EUR_USD and GBP_USD

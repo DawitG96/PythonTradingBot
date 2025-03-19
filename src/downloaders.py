@@ -57,12 +57,13 @@ class CapitalDownloader(Downloader):
         url = f"prices/{epic}?resolution={resolution}&from={from_date}&to={to_date}&max={max_bars}"
         response = self.request("GET", url)
         data = response.json()
-        self.database.save_data_array(data.prices)
+        self.database.save_data_array(data["prices"], epic, resolution)
+        return data
 
     def download_epics(self):
         response = self.get("markets")
         data = response.json()
-        self.database.save_market_array(data.markets)
+        self.database.save_market_array(data["markets"])
 
 
 
