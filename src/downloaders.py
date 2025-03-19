@@ -24,7 +24,7 @@ class Downloader:
         return self.request("POST", url, data)
 
     def request(self, method:str, url:str, data:dict=None, maxRateSec:float=0.0) -> requests.Response:
-        response = requests.request(method, url, headers=self.headers, data=data)
+        response = requests.request(method, self.baseURL + url, headers=self.headers, data=data)
 
         match response.status_code:
             case 200:
@@ -53,7 +53,7 @@ class CapitalDownloader(Downloader):
 
     def download_historical_data(self, epic:str, resolution:str, from_date:str, to_date:str, max_bars:int=1000):
         url = f"prices/{epic}?resolution={resolution}&from={from_date}&to={to_date}&max={max_bars}"
-        response = self.get(url)
+        response = self.request("GET", url)
 
         data = response.json()
         self.database.save_data_array(data.prices)

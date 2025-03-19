@@ -12,8 +12,9 @@ class Database:
         for epic in epics:
             #resolution,snapshotTime,snapshotTimeUTC,openPrice,closePrice,highPrice,lowPrice,lastTradedVolume
             self.cursor.execute(f"CREATE TABLE IF NOT EXISTS {epic} (resolution TEXT, snapshotTimeUTC TEXT, openBid REAL, openAsk REAL, highBid REAL, highAsk REAL, lowBid REAL, lowAsk REAL, closeBid REAL, closeAsk REAL, lastTradedVolume INTEGER, PRIMARY KEY (resolution, snapshotTimeUTC))")
-            #source,author,title,description,url,urlToImage,publishedAt,content
-            self.cursor.execute(f"CREATE TABLE IF NOT EXISTS {epic}_news (publishedAt TEXT, source TEXT, author TEXT, title TEXT, description TEXT, url TEXT, urlToImage TEXT, content TEXT, PRIMARY KEY (publishedAt, source))")
+
+        #source,author,title,description,url,urlToImage,publishedAt,content
+        self.cursor.execute(f"CREATE TABLE IF NOT EXISTS news (publishedAt TEXT, source TEXT, author TEXT, title TEXT, description TEXT, url TEXT, urlToImage TEXT, content TEXT, PRIMARY KEY (publishedAt, source))")
         self.conn.commit()
 
     def __del__(self):
@@ -38,7 +39,7 @@ class Database:
         self.cursor.executemany(f"INSERT OR IGNORE INTO {epic} (resolution, snapshotTimeUTC, openBid, openAsk, highBid, highAsk, lowBid, lowAsk, closeBid, closeAsk, lastTradedVolume) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", dataOk)
         self.conn.commit()
 
-    def save_news_array(self, data, epic):
+    def save_news_array(self, data):
         dataOk = []
         for d in data:
             dataOk.append((
@@ -51,7 +52,7 @@ class Database:
                 d["urlToImage"],
                 d["content"]
             ))
-        self.cursor.executemany(f"INSERT OR IGNORE INTO {epic}_news (publishedAt, source, author, title, description, url, urlToImage, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", dataOk)
+        self.cursor.executemany(f"INSERT OR IGNORE INTO news (publishedAt, source, author, title, description, url, urlToImage, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", dataOk)
         self.conn.commit()
 
 
@@ -109,8 +110,8 @@ if __name__ == "__main__":
             "content": "Content 2"
         }
     ]
-    db.save_news_array(news, "GBP_USD")
-    db.cursor.execute("SELECT * FROM GBP_USD_news")
+    db.save_news_array(news)
+    db.cursor.execute("SELECT * FROM news")
     assert db.cursor.fetchall() == [
         ('2021-10-01T00:00:00', 'CNN', 'John Doe', 'Title 1', 'Description 1', 'http://www.example.com', 'http://www.example.com/image.jpg', 'Content 1'),
         ('2021-10-02T00:00:00', 'BBC', 'Jane Doe', 'Title 2', 'Description 2', 'http://www.example.com', 'http://www.example.com/image.jpg', 'Content 2')

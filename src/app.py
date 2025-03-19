@@ -15,8 +15,8 @@ if not os.getenv("APP_TRADING_BOT"):
 
 # Configurazioni iniziali
 DB_HOST = os.getenv("APP_DB_HOST", ":memory:") # default per SQLite in RAM
+EPICS = os.getenv("APP_EPICS").split(",")
 NEWS_APIKEY = os.getenv("NEWS_APIKEY")
-CAPITAL_EPICS = os.getenv("CAPITAL_EPICS").split(",")
 CAPITAL_RESOLUTIONS = os.getenv("CAPITAL_RESOLUTIONS").split(",")
 CAPITAL_APIKEY = os.getenv("CAPITAL_APIKEY")
 CAPITAL_EMAIL = os.getenv("CAPITAL_EMAIL")
@@ -47,7 +47,7 @@ def fetch_data(db:Database):
     capital.start_new_session(CAPITAL_EMAIL, CAPITAL_PASSWORD)
     start_date = datetime.now(timezone.utc) - timedelta(days=2)
 
-    for epic in CAPITAL_EPICS:
+    for epic in EPICS:
         for resolution in CAPITAL_RESOLUTIONS:
             pass #TODO da implementare
 
@@ -63,4 +63,4 @@ def fetch_data(db:Database):
 arg = argparse.ArgumentParser(description="Bot di trading")
 #arguments = arg.parse_args()
 
-database = Database(DB_HOST, CAPITAL_EPICS)
+database = Database(DB_HOST, EPICS)
