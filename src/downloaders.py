@@ -1,5 +1,7 @@
 from database import Database
 import requests
+import json
+import configparser
 
 class Downloader:
     baseURL:str
@@ -24,6 +26,7 @@ class Downloader:
         return self.request("POST", url, data)
 
     def request(self, method:str, url:str, data:dict=None, maxRateSec:float=0.0) -> requests.Response:
+        data = json.dumps(data) if data is not None else None
         response = requests.request(method, self.baseURL + url, headers=self.headers, data=data)
 
         match response.status_code:
@@ -58,7 +61,38 @@ class CapitalDownloader(Downloader):
         data = response.json()
         self.database.save_data_array(data.prices)
 
+    def get_epics(self, save_to_ini=True, filename="epics.ini"):
+        response = self.get("markets")
+        data = response.json()
 
+        epics_by_category = {}
+
+        for market in data["markets"]:
+            epic = market["epic"]
+            category = market["instrumentType"]
+
+            if category not in epics_by_category:
+                epics_by_category[category] = []
+            epics_by_category[category].append(epic)
+        if save_to_ini:
+            self.save_epics_to_ini(epics_by_category, filename)
+
+        return epics_by_category
+
+    def save_epics_to_ini(self, epics_dict, filename):
+        config = configparser.ConfigParser()
+
+        all_epics = []
+        for category, epics in epics_dict.items():
+            all_epics.extend(epics)
+        config["GLOBAL"] = {"epics": ",".join(all_epics)}
+
+        for category, epics in epics_dict.items():
+            config[category] = {"epics": ",".join(epics)}
+
+        with open(filename, "w") as configfile:
+            config.write(configfile)
+        
 
 class NewsDownloader(Downloader):
     def __init__(self, database:Database, api_key:str):

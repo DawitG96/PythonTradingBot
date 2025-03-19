@@ -1,17 +1,16 @@
 import sqlite3
 
 class Database:
-    def __init__(self, db_name, epics):
+    def __init__(self, db_name):
         '''
         Initialize the database and create all the tables
         '''
         self.db_name = db_name
         self.conn = sqlite3.connect(db_name)
         self.cursor = self.conn.cursor()
-
-        for epic in epics:
-            #resolution,snapshotTime,snapshotTimeUTC,openPrice,closePrice,highPrice,lowPrice,lastTradedVolume
-            self.cursor.execute(f"CREATE TABLE IF NOT EXISTS {epic} (resolution TEXT, snapshotTimeUTC TEXT, openBid REAL, openAsk REAL, highBid REAL, highAsk REAL, lowBid REAL, lowAsk REAL, closeBid REAL, closeAsk REAL, lastTradedVolume INTEGER, PRIMARY KEY (resolution, snapshotTimeUTC))")
+            
+        #resolution,snapshotTime,snapshotTimeUTC,openPrice,closePrice,highPrice,lowPrice,lastTradedVolume
+        self.cursor.execute(f"CREATE TABLE IF NOT EXISTS historical_data (epic TEXT, resolution TEXT, snapshotTimeUTC TEXT, openBid REAL, openAsk REAL, highBid REAL, highAsk REAL, lowBid REAL, lowAsk REAL, closeBid REAL, closeAsk REAL, lastTradedVolume INTEGER, PRIMARY KEY (epic, resolution, snapshotTimeUTC))")
 
         #source,author,title,description,url,urlToImage,publishedAt,content
         self.cursor.execute(f"CREATE TABLE IF NOT EXISTS news (publishedAt TEXT, source TEXT, author TEXT, title TEXT, description TEXT, url TEXT, urlToImage TEXT, content TEXT, PRIMARY KEY (publishedAt, source))")
@@ -24,6 +23,7 @@ class Database:
         dataOk = []
         for d in data:
             dataOk.append((
+                epic,
                 resolution,
                 d["snapshotTimeUTC"],
                 d["openPrice"]["bid"],
@@ -36,7 +36,7 @@ class Database:
                 d["closePrice"]["ask"],
                 d["lastTradedVolume"]
             ))
-        self.cursor.executemany(f"INSERT OR IGNORE INTO {epic} (resolution, snapshotTimeUTC, openBid, openAsk, highBid, highAsk, lowBid, lowAsk, closeBid, closeAsk, lastTradedVolume) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", dataOk)
+        self.cursor.executemany(f"INSERT OR IGNORE INTO historical_data (epic, resolution, snapshotTimeUTC, openBid, openAsk, highBid, highAsk, lowBid, lowAsk, closeBid, closeAsk, lastTradedVolume) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", dataOk)
         self.conn.commit()
 
     def save_news_array(self, data):
@@ -61,7 +61,7 @@ class Database:
 # The database will be deleted after the test
 # The data are taken from the OANDA API and the News API and saved in the database
 if __name__ == "__main__":
-    db = Database(":memory:", ["EUR_USD", "GBP_USD"])
+    db = Database(":memory:")
 
     data = [
         {
