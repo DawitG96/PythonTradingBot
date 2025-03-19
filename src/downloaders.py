@@ -1,8 +1,7 @@
 from database import Database
 import requests
-import json
 
-class Downloader():
+class Downloader:
     baseURL:str
     headers:dict
     database:Database
@@ -19,22 +18,27 @@ class Downloader():
         self.headers[name] = value
 
     def get(self, url:str) -> requests.Response:
-        response = requests.get(self.baseURL + url, headers=self.headers)
-        return self.handle_response(url, response)
+        return self.request("GET", url)
 
     def post(self, url:str, data:dict) -> requests.Response:
-        data = json.dumps(data)
-        response = requests.post(self.baseURL + url, headers=self.headers, data=data)
-        return self.handle_response(url, response)
+        return self.request("POST", url, data)
 
-    def handle_response(url:str, response:requests.Response) -> requests.Response:
-        if response.status_code == 200:
-            return response
-        raise Exception(f"❌ Error '{url}' {response.status_code}: {response.text}")
+    def request(self, method:str, url:str, data:dict=None, maxRateSec:float=0.0) -> requests.Response:
+        response = requests.request(method, url, headers=self.headers, data=data)
+
+        match response.status_code:
+            case 200:
+                return response
+            case 429: # TODO magari mettere un wait usando il paramentro maxRateSec e riprovare (?)
+                raise Exception(f"❌ Rate limited '{url}' {response.status_code}: {response.text}")
+            case _:
+                raise Exception(f"❌ Error '{url}' {response.status_code}: {response.text}")
 
 
 
 class CapitalDownloader(Downloader):
+    '''Downloader per dati storici di https://open-api.capital.com/'''
+
     def __init__(self, database:Database, api_key:str):
         super().__init__("https://api-capital.backend-capital.com/api/v1/", database)
         self.header("Content-Type", "application/json")
@@ -60,10 +64,10 @@ class NewsDownloader(Downloader):
     def __init__(self, database:Database, api_key:str):
         super().__init__("https://newsapi.org/v2/", database)
         self.header("Content-Type", "application/json")
-        self.api_key = api_key
+        self.header("x-api-key", api_key)
 
     def download_news(self, query:str, from_date:str, to_date:str):
-        url = f"everything?apiKey={self.api_key}&q={query}&from={from_date}&to={to_date}&sortBy=popularity"
+        url = f"everything?q={query}&from={from_date}&to={to_date}"
         response = self.get(url)
 
         news = response.json()
