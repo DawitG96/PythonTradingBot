@@ -81,11 +81,14 @@ def fetch_data(db:Database):
 
 
 # ======= Main =======
-# TODO da implementare
-
-# Argomenti dal line di comando per il bot
-# Eventuali argomenti da aggiungere (per esempio scarica solo le news/trading, ecc.)
 arg = argparse.ArgumentParser(description="Bot di trading")
-#arguments = arg.parse_args()
+arg.add_argument("-f", "--fetch", help="Scarica i dati specificati [news, data]")
+arguments = arg.parse_args()
 
-fetch_data(Database(DB_HOST))
+database = Database(DB_HOST)
+match arguments.fetch:
+    case "news": fetch_news(database)
+    case "data": fetch_data(database)
+    case _:
+        print("❌ Nessun comando specificato. Utilizzare -h per visualizzare l'help.")
+        exit(1)
