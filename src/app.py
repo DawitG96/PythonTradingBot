@@ -9,7 +9,7 @@ from downloaders import CapitalDownloader, NewsDownloader
 
 # Controllo se le variabili d'ambiente sono state impostate
 if not os.getenv("APP_TRADING_BOT"):
-    print("❌ Variabili di ambiente per il bot di trading non impostate.")
+    print("Variabili di ambiente non impostate. Caricamento dal file .env...")
     if not load_dotenv():
         print("❌ File .env non trovato.\nCopia il file .env.example in .env e imposta le variabili d'ambiente.")
         exit(1)
@@ -46,51 +46,34 @@ def fetch_data(db:Database):
 
     capital = CapitalDownloader(db, CAPITAL_APIKEY)
     capital.start_new_session(CAPITAL_EMAIL, CAPITAL_PASSWORD)
-    capital.download_epics()    
-    # Imposta data di fine come due giorni fa
+    capital.download_epics()
 
-    total_epic_resolutions = len(EPICS) * len(CAPITAL_RESOLUTIONS)
+    total = len(EPICS) * len(CAPITAL_RESOLUTIONS)
     completed = 0
 
     for epic in EPICS:
         for resolution in CAPITAL_RESOLUTIONS:
             print(f"⏳ Elaborazione {epic} ({resolution})...")
 
-            to_date = datetime.now(timezone.utc) - timedelta(days=2)
+            to_date = datetime.now(timezone.utc)
             from_date = to_date - CAPITAL_TIMEFRAME_LIMITS[resolution]
-            prev_to_date = None
 
             try:
                 while True:
-
                     from_date_str = from_date.strftime("%Y-%m-%dT%H:%M:%S")
                     to_date_str = to_date.strftime("%Y-%m-%dT%H:%M:%S")
 
-                    print(f"  📊 Scarico dati da {from_date_str} a {to_date_str}...")
+                    print(f"  📊 Scarico {epic} da {from_date_str} a {to_date_str}...")
                     capital.download_historical_data(epic, resolution, from_date_str, to_date_str)
 
-                    oldest_record = database.get_least_recent_date(epic, resolution)
-                    new_to_date = datetime.fromisoformat(oldest_record) - timedelta(seconds=1)
-
-                    if prev_to_date and new_to_date >= prev_to_date:
-                        print(f"  ⚠️ Nessun nuovo dato più vecchio disponibile per {epic} ({resolution}), prossima risoluzione.")
-                        break
-
-                    prev_to_date = new_to_date
-                    to_date = new_to_date
+                    oldest_record = db.get_least_recent_date(epic, resolution)
+                    to_date = datetime.fromisoformat(oldest_record) - timedelta(seconds=1)
                     from_date = to_date - CAPITAL_TIMEFRAME_LIMITS[resolution]
-
-                    if to_date < datetime(1950, 1, 1):
-                        print(f"  🏁 Raggiunto il limite temporale per {epic} ({resolution})")
-                        break
-
-                    time.sleep(0.1)
-
             except Exception as e:
-                print(f"❌ Errore durante il download dei dati: {e}")
+                print(e)
 
             completed += 1
-            print(f"📈 Progresso: {completed}/{total_epic_resolutions} ({completed/total_epic_resolutions*100:.2f}%)")
+            print(f"📈 Progresso: {completed}/{total} ({completed/total*100:.2f}%)")
 
     print("✅ Download di tutti i dati completato!")
 
@@ -105,5 +88,4 @@ def fetch_data(db:Database):
 arg = argparse.ArgumentParser(description="Bot di trading")
 #arguments = arg.parse_args()
 
-database = Database(DB_HOST)
-fetch_data(database)
+fetch_data(Database(DB_HOST))
