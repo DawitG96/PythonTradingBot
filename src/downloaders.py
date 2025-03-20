@@ -42,6 +42,8 @@ class Downloader:
         match response.status_code:
             case 200:
                 return response
+            case 404:
+                return None
             # TODO gestire eventualmente altri codici di errore
             case _:
                 raise Exception(f"❌ Error '{url}' {response.status_code}: {response.text}")
@@ -65,9 +67,11 @@ class CapitalDownloader(Downloader):
     def download_historical_data(self, epic:str, resolution:str, from_date:str, to_date:str, max_bars:int=1000):
         url = f"prices/{epic}?resolution={resolution}&from={from_date}&to={to_date}&max={max_bars}"
         response = self.request("GET", url, maxSecWait=0.1)
+        if(response is None):
+            return None
         data = response.json()
         data = transform.from_capital_history(epic, resolution, data["prices"])
-        self.database.save_data_array(data)
+        self.database.save_data_array(data, resolution)
         return data
 
     def download_epics(self):

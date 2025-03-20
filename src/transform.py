@@ -3,7 +3,6 @@ def from_capital_history(epic:str, resolution:str, data:list[dict]) -> dict:
     '''Trasforma i dati storici di Capital.com in tuple per il database'''
     return [ (
         epic,
-        resolution,
         d["snapshotTimeUTC"],
         d["openPrice"]["bid"],
         d["openPrice"]["ask"],

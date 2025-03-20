@@ -9,7 +9,11 @@ class Database:
         self.conn = sqlite3.connect(db_name)
         self.cursor = self.conn.cursor()
 
-        self.cursor.execute(f"CREATE TABLE IF NOT EXISTS historical_data (epic TEXT, resolution TEXT, snapshotTimeUTC TEXT, openBid REAL, openAsk REAL, highBid REAL, highAsk REAL, lowBid REAL, lowAsk REAL, closeBid REAL, closeAsk REAL, lastTradedVolume INTEGER, PRIMARY KEY (epic, resolution, snapshotTimeUTC))")
+        self.cursor.execute(f"CREATE TABLE IF NOT EXISTS historical_data_DAY (epic TEXT, snapshotTimeUTC TEXT, openBid REAL, openAsk REAL, highBid REAL, highAsk REAL, lowBid REAL, lowAsk REAL, closeBid REAL, closeAsk REAL, lastTradedVolume INTEGER, PRIMARY KEY (epic, snapshotTimeUTC))")
+        self.cursor.execute(f"CREATE TABLE IF NOT EXISTS historical_data_HOUR (epic TEXT, snapshotTimeUTC TEXT, openBid REAL, openAsk REAL, highBid REAL, highAsk REAL, lowBid REAL, lowAsk REAL, closeBid REAL, closeAsk REAL, lastTradedVolume INTEGER, PRIMARY KEY (epic, snapshotTimeUTC))")
+        self.cursor.execute(f"CREATE TABLE IF NOT EXISTS historical_data_MINUTE_15 (epic TEXT, snapshotTimeUTC TEXT, openBid REAL, openAsk REAL, highBid REAL, highAsk REAL, lowBid REAL, lowAsk REAL, closeBid REAL, closeAsk REAL, lastTradedVolume INTEGER, PRIMARY KEY (epic, snapshotTimeUTC))")
+        self.cursor.execute(f"CREATE TABLE IF NOT EXISTS historical_data_MINUTE_5 (epic TEXT, snapshotTimeUTC TEXT, openBid REAL, openAsk REAL, highBid REAL, highAsk REAL, lowBid REAL, lowAsk REAL, closeBid REAL, closeAsk REAL, lastTradedVolume INTEGER, PRIMARY KEY (epic, snapshotTimeUTC))")
+        self.cursor.execute(f"CREATE TABLE IF NOT EXISTS historical_data_MINUTE (epic TEXT, snapshotTimeUTC TEXT, openBid REAL, openAsk REAL, highBid REAL, highAsk REAL, lowBid REAL, lowAsk REAL, closeBid REAL, closeAsk REAL, lastTradedVolume INTEGER, PRIMARY KEY (epic, snapshotTimeUTC))")
         self.cursor.execute(f"CREATE TABLE IF NOT EXISTS markets (epic TEXT PRIMARY KEY, instrumentType TEXT, instrumentName TEXT)")
         self.cursor.execute(f"CREATE TABLE IF NOT EXISTS news (publishedAt TEXT, source TEXT, author TEXT, title TEXT, description TEXT, url TEXT, urlToImage TEXT, content TEXT, PRIMARY KEY (publishedAt, source))")
         self.conn.commit()
@@ -17,8 +21,8 @@ class Database:
     def __del__(self):
         self.conn.close()
 
-    def save_data_array(self, data:list[tuple]):
-        self.cursor.executemany(f"INSERT OR IGNORE INTO historical_data (epic, resolution, snapshotTimeUTC, openBid, openAsk, highBid, highAsk, lowBid, lowAsk, closeBid, closeAsk, lastTradedVolume) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", data)
+    def save_data_array(self, data:list[tuple], resolution:str):
+        self.cursor.executemany(f"INSERT OR IGNORE INTO historical_data_{resolution} (epic, snapshotTimeUTC, openBid, openAsk, highBid, highAsk, lowBid, lowAsk, closeBid, closeAsk, lastTradedVolume) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", data)
         self.conn.commit()
 
     def save_market_array(self, data:list[tuple]):
@@ -29,8 +33,8 @@ class Database:
         self.cursor.executemany(f"INSERT OR IGNORE INTO news (publishedAt, source, author, title, description, url, urlToImage, content) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", data)
         self.conn.commit()
 
-    def get_least_recent_date(self, epic, resolution):
-        self.cursor.execute(f"SELECT MIN(snapshotTimeUTC) FROM historical_data WHERE epic = ? AND resolution = ?", (epic, resolution))
+    def get_oldest_date(self, epic:str, resolution:str):
+        self.cursor.execute(f"SELECT MIN(snapshotTimeUTC) FROM historical_data_{resolution} WHERE epic = ?", (epic,))
         return self.cursor.fetchone()[0]
 
 
@@ -43,16 +47,16 @@ if __name__ == "__main__":
 
     # Save data in the database
     data = [
-        ('EUR_USD', 'H1', '2021-10-01T00:00:00', 1.0, 1.1, 1.2, 1.3, 0.9, 1.0, 1.1, 1.2, 1000),
-        ('EUR_USD', 'H1', '2021-10-02T00:00:00', 1.1, 1.2, 1.3, 1.4, 1.0, 1.1, 1.2, 1.3, 2000),
+        ('EUR_USD', '2021-10-01T00:00:00', 1.0, 1.1, 1.2, 1.3, 0.9, 1.0, 1.1, 1.2, 1000),
+        ('EUR_USD', '2021-10-02T00:00:00', 1.1, 1.2, 1.3, 1.4, 1.0, 1.1, 1.2, 1.3, 2000),
     ]
     db.save_data_array(data)
-    db.cursor.execute("SELECT * FROM historical_data")
+    db.cursor.execute("SELECT * FROM historical_data_DAY")
     assert db.cursor.fetchall() == [
-        ('EUR_USD', 'H1', '2021-10-01T00:00:00', 1.0, 1.1, 1.2, 1.3, 0.9, 1.0, 1.1, 1.2, 1000),
-        ('EUR_USD', 'H1', '2021-10-02T00:00:00', 1.1, 1.2, 1.3, 1.4, 1.0, 1.1, 1.2, 1.3, 2000)
+        ('EUR_USD', '2021-10-01T00:00:00', 1.0, 1.1, 1.2, 1.3, 0.9, 1.0, 1.1, 1.2, 1000),
+        ('EUR_USD', '2021-10-02T00:00:00', 1.1, 1.2, 1.3, 1.4, 1.0, 1.1, 1.2, 1.3, 2000)
     ]
-    assert db.get_least_recent_date("EUR_USD", "H1") == "2021-10-01T00:00:00"
+    assert db.get_oldest_date("EUR_USD", "H1") == "2021-10-01T00:00:00"
 
     # Save markets in the database
     markets = [
