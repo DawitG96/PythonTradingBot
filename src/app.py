@@ -1,6 +1,5 @@
 import os
 import argparse
-import time
 
 from database import Database
 from dotenv import load_dotenv
@@ -56,23 +55,19 @@ def fetch_data(db:Database):
             print(f"⏳ Elaborazione {epic} ({resolution})...")
 
             to_date = db.get_oldest_date(epic, resolution)
-            if to_date is None:
-                to_date = datetime.now(timezone.utc)
-            else:
-                to_date = datetime.fromisoformat(to_date)
+            to_date = datetime.now(timezone.utc) if to_date is None else to_date
             from_date = to_date - CAPITAL_TIMEFRAME_LIMITS[resolution]
 
             while True:
                 from_date_str = from_date.strftime("%Y-%m-%dT%H:%M:%S")
                 to_date_str = to_date.strftime("%Y-%m-%dT%H:%M:%S")
 
-                print(f"  📊 Scarico {epic} da {from_date_str} a {to_date_str}...")
-                data= capital.download_historical_data(epic, resolution, from_date_str, to_date_str)
+                data = capital.download_historical_data(epic, resolution, from_date_str, to_date_str)
                 if data is None:
                     break
+                print(f"  📊 Scaricato {epic} da {from_date_str} a {to_date_str}...")
 
-                oldest_record = db.get_oldest_date(epic, resolution)
-                to_date = datetime.fromisoformat(oldest_record) - timedelta(seconds=1)
+                to_date = db.get_oldest_date(epic, resolution) - timedelta(seconds=1)
                 from_date = to_date - CAPITAL_TIMEFRAME_LIMITS[resolution]
 
             completed += 1

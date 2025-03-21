@@ -1,12 +1,17 @@
 import sqlite3
+from datetime import datetime
+from mysql.connector import connection
 
 class Database:
-    def __init__(self, db_name):
+    def __init__(self, db_host:str, db_name:str=None, db_user:str=None, db_password:str=None):
         '''
         Initialize the database and create all the tables
         '''
-        self.db_name = db_name
-        self.conn = sqlite3.connect(db_name)
+
+        if db_name is not None:
+            self.conn = connection.MySQLConnection(user=db_user, password=db_password, host=db_host, database=db_name)
+        else:
+            self.conn = sqlite3.connect(db_host)
         self.cursor = self.conn.cursor()
 
         self.cursor.execute(f"CREATE TABLE IF NOT EXISTS historical_data_DAY (epic TEXT, snapshotTimeUTC TEXT, openBid REAL, openAsk REAL, highBid REAL, highAsk REAL, lowBid REAL, lowAsk REAL, closeBid REAL, closeAsk REAL, lastTradedVolume INTEGER, PRIMARY KEY (epic, snapshotTimeUTC))")
@@ -35,28 +40,38 @@ class Database:
 
     def get_oldest_date(self, epic:str, resolution:str):
         self.cursor.execute(f"SELECT MIN(snapshotTimeUTC) FROM historical_data_{resolution} WHERE epic = ?", (epic,))
-        return self.cursor.fetchone()[0]
+        date = self.cursor.fetchone()[0]
+        return None if date is None else datetime.fromisoformat(date)
 
+    def import_from_sqlite(self, sqlite_db:str):
+        '''Import data from a SQLite database to the current MYSQL database'''
+        if isinstance(self.conn, sqlite3.Connection):
+            raise ValueError("Cannot import from SQLite to SQLite. Please use a MySQL database connection.")
 
+        self.cursor.execute("SELECT table_name FROM information_schema.tables")
+        tables = self.cursor.fetchall()
+
+        self.cursor.execute(f"ATTACH DATABASE ? AS sqlite_db", (sqlite_db,))
+        for table in tables:
+            self.cursor.execute(f"INSERT OR IGNORE INTO {table[0]} SELECT * FROM sqlite_db.{table[0]}")
+        self.conn.commit()
 
 # This test will create a database with two tables: EUR_USD and GBP_USD
 # The database will be deleted after the test
 # The data are taken from the OANDA API and the News API and saved in the database
 if __name__ == "__main__":
     db = Database(":memory:")
+    assert db.get_oldest_date("EUR_USD", "DAY") == None
 
     # Save data in the database
     data = [
         ('EUR_USD', '2021-10-01T00:00:00', 1.0, 1.1, 1.2, 1.3, 0.9, 1.0, 1.1, 1.2, 1000),
         ('EUR_USD', '2021-10-02T00:00:00', 1.1, 1.2, 1.3, 1.4, 1.0, 1.1, 1.2, 1.3, 2000),
     ]
-    db.save_data_array(data)
+    db.save_data_array(data, "DAY")
     db.cursor.execute("SELECT * FROM historical_data_DAY")
-    assert db.cursor.fetchall() == [
-        ('EUR_USD', '2021-10-01T00:00:00', 1.0, 1.1, 1.2, 1.3, 0.9, 1.0, 1.1, 1.2, 1000),
-        ('EUR_USD', '2021-10-02T00:00:00', 1.1, 1.2, 1.3, 1.4, 1.0, 1.1, 1.2, 1.3, 2000)
-    ]
-    assert db.get_oldest_date("EUR_USD", "H1") == "2021-10-01T00:00:00"
+    assert db.cursor.fetchall() == data
+    assert db.get_oldest_date("EUR_USD", "DAY") == datetime.fromisoformat("2021-10-01T00:00:00")
 
     # Save markets in the database
     markets = [
@@ -65,10 +80,7 @@ if __name__ == "__main__":
     ]
     db.save_market_array(markets)
     db.cursor.execute("SELECT * FROM markets")
-    assert db.cursor.fetchall() == [
-        ('EUR_USD', 'CURRENCY', 'Euro/US Dollar'),
-        ('GBP_USD', 'CURRENCY', 'British Pound/US Dollar')
-    ]
+    assert db.cursor.fetchall() == markets
 
     # Save news in the database
     news = [
@@ -77,7 +89,4 @@ if __name__ == "__main__":
     ]
     db.save_news_array(news)
     db.cursor.execute("SELECT * FROM news")
-    assert db.cursor.fetchall() == [
-        ('2021-10-01T00:00:00', 'CNN', 'John Doe', 'Title 1', 'Description 1', 'http://www.example.com', 'http://www.example.com/image.jpg', 'Content 1'),
-        ('2021-10-02T00:00:00', 'BBC', 'Jane Doe', 'Title 2', 'Description 2', 'http://www.example.com', 'http://www.example.com/image.jpg', 'Content 2')
-    ]
+    assert db.cursor.fetchall() == news
