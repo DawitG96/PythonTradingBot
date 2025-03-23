@@ -1,17 +1,18 @@
 
 def from_capital_history(epic:str, resolution:str, data:list[dict]) -> dict:
     '''Trasforma i dati storici di Capital.com in tuple per il database'''
+
     return [ (
         epic,
         d["snapshotTimeUTC"],
-        d["openPrice"]["bid"],
-        d["openPrice"]["ask"],
-        d["highPrice"]["bid"],
-        d["highPrice"]["ask"],
-        d["lowPrice"]["bid"],
-        d["lowPrice"]["ask"],
-        d["closePrice"]["bid"],
-        d["closePrice"]["ask"],
+        d["openPrice"].get("bid", -1.0),
+        d["openPrice"].get("ask", -1.0),
+        d["highPrice"].get("bid", -1.0),
+        d["highPrice"].get("ask", -1.0),
+        d["lowPrice"].get("bid", -1.0),
+        d["lowPrice"].get("ask", -1.0),
+        d["closePrice"].get("bid", -1.0),
+        d["closePrice"].get("ask", -1.0),
         d["lastTradedVolume"]
     ) for d in data ]
 
