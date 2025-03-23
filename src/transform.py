@@ -4,6 +4,7 @@ def from_capital_history(epic:str, resolution:str, data:list[dict]) -> dict:
 
     return [ (
         epic,
+        resolution,
         d["snapshotTimeUTC"],
         d["openPrice"].get("bid", -1.0),
         d["openPrice"].get("ask", -1.0),

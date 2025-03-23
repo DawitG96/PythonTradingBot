@@ -10,13 +10,13 @@ from downloaders import CapitalDownloader, NewsDownloader
 if not os.getenv("APP_TRADING_BOT"):
     print("Variabili di ambiente non impostate. Caricamento dal file .env...")
     if not load_dotenv():
-        print("❌ File .env non trovato.\nCopia il file .env.example in .env e imposta le variabili d'ambiente.")
+        print("❌\tFile .env non trovato.\nCopia il file .env.example in .env e imposta le variabili d'ambiente.")
         exit(1)
 
 # Configurazioni iniziali
 DB_HOST = os.getenv("APP_DB_HOST", ":memory:") # default per SQLite in RAM
 DB_USER = os.getenv("APP_DB_USER", None)
-DB_PASS = os.getenv("APP_DB_PASS", None)
+DB_PASS = os.getenv("APP_DB_PASSWORD", None)
 DB_NAME = os.getenv("APP_DB_NAME", None)
 
 EPICS = os.getenv("APP_EPICS").split(",")
@@ -69,7 +69,7 @@ def fetch_data(db:Database):
                 data = capital.download_historical_data(epic, resolution, from_date_str, to_date_str)
                 if data is None:
                     break
-                print(f"  📊 Scaricato {epic} da {from_date_str} a {to_date_str}...")
+                print(f"\t📊 Scaricato {epic} da {from_date_str} a {to_date_str}...")
 
                 to_date = db.get_oldest_date(epic, resolution) - timedelta(seconds=1)
                 from_date = to_date - CAPITAL_TIMEFRAME_LIMITS[resolution]
@@ -88,7 +88,7 @@ arg.add_argument("-f", "--fetch", help="Scarica i dati specificati [news, data]"
 arg.add_argument("-d", "--database", help="Sposta i dati da un database SQLite a quello MySQL")
 arguments = arg.parse_args()
 
-database = Database(DB_HOST, DB_NAME, DB_USER, DB_PASS )
+database = Database(DB_HOST, DB_NAME, DB_USER, DB_PASS)
 arguments.database and database.import_from_sqlite(arguments.database)
 
 match arguments.fetch:
