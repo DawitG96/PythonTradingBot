@@ -15,6 +15,10 @@ if not os.getenv("APP_TRADING_BOT"):
 
 # Configurazioni iniziali
 DB_HOST = os.getenv("APP_DB_HOST", ":memory:") # default per SQLite in RAM
+DB_USER = os.getenv("APP_DB_USER", None)
+DB_PASS = os.getenv("APP_DB_PASS", None)
+DB_NAME = os.getenv("APP_DB_NAME", None)
+
 EPICS = os.getenv("APP_EPICS").split(",")
 NEWS_APIKEY = os.getenv("NEWS_APIKEY")
 CAPITAL_RESOLUTIONS = os.getenv("CAPITAL_RESOLUTIONS").split(",")
@@ -81,9 +85,12 @@ def fetch_data(db:Database):
 # ======= Main =======
 arg = argparse.ArgumentParser(description="Bot di trading")
 arg.add_argument("-f", "--fetch", help="Scarica i dati specificati [news, data]")
+arg.add_argument("-d", "--database", help="Sposta i dati da un database SQLite a quello MySQL")
 arguments = arg.parse_args()
 
-database = Database(DB_HOST)
+database = Database(DB_HOST, DB_NAME, DB_USER, DB_PASS )
+arguments.database and database.import_from_sqlite(arguments.database)
+
 match arguments.fetch:
     case "news": fetch_news(database)
     case "data": fetch_data(database)

@@ -44,7 +44,11 @@ class Database:
         return None if date is None else datetime.fromisoformat(date)
 
     def import_from_sqlite(self, sqlite_db:str):
-        '''Import data from a SQLite database to the current MYSQL database'''
+        '''Import data from a SQLite database to the current database'''
+        if sqlite_db is None:
+            raise ValueError("Please provide a SQLite database path.")
+        
+        # Se stiamo usando MySQL
         if isinstance(self.conn, sqlite3.Connection):
             raise ValueError("Cannot import from SQLite to SQLite. Please use a MySQL database connection.")
 
