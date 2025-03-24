@@ -1,5 +1,4 @@
 requests
-pandas
 dotenv
 argparse
-mysql-connector-python
+Peewee

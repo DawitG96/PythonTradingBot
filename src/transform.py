@@ -21,6 +21,7 @@ def from_capital_markets(data:list[dict]) -> dict:
     '''Trasforma i dati dei mercati di Capital.com in tuple per il database'''
     return [ (
         d["epic"],
+        d["symbol"],
         d["instrumentType"],
         d["instrumentName"]
     ) for d in data ]

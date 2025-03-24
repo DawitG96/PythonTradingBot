@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 
 from database import Database
@@ -14,12 +15,7 @@ if not os.getenv("APP_TRADING_BOT"):
         exit(1)
 
 # Configurazioni iniziali
-DB_HOST = os.getenv("APP_DB_HOST", ":memory:") # default per SQLite in RAM
-DB_USER = os.getenv("APP_DB_USER", None)
-DB_PASS = os.getenv("APP_DB_PASSWORD", None)
-DB_NAME = os.getenv("APP_DB_NAME", None)
-
-EPICS = os.getenv("APP_EPICS").split(",")
+DB_URL = os.getenv("APP_DB_URL")
 NEWS_APIKEY = os.getenv("NEWS_APIKEY")
 CAPITAL_RESOLUTIONS = os.getenv("CAPITAL_RESOLUTIONS").split(",")
 CAPITAL_APIKEY = os.getenv("CAPITAL_APIKEY")
@@ -44,17 +40,24 @@ def fetch_news(db:Database):
 
 
 
-def fetch_data(db:Database):
+def fetch_data(db:Database, epics:list[str]):
     '''Scarica dati storici dei trading'''
 
     capital = CapitalDownloader(db, CAPITAL_APIKEY)
     capital.start_new_session(CAPITAL_EMAIL, CAPITAL_PASSWORD)
     capital.download_epics()
 
-    total = len(EPICS) * len(CAPITAL_RESOLUTIONS)
+    if not epics:
+        epics = db.get_all_epics()
+        proceed = input(f"Ci sono {len(epics)} epics da scaricare. Vuoi continuare? (s/n): ")
+        if proceed.lower() != 's':
+            print("❌ Operazione annullata dall'utente.")
+            return
+
+    total = len(epics) * len(CAPITAL_RESOLUTIONS)
     completed = 0
 
-    for epic in EPICS:
+    for epic in epics:
         for resolution in CAPITAL_RESOLUTIONS:
             print(f"⏳ Elaborazione {epic} ({resolution})...")
 
@@ -84,16 +87,17 @@ def fetch_data(db:Database):
 
 # ======= Main =======
 arg = argparse.ArgumentParser(description="Bot di trading")
-arg.add_argument("-f", "--fetch", help="Scarica i dati specificati [news, data]")
-arg.add_argument("-d", "--database", help="Sposta i dati da un database SQLite a quello MySQL")
+arg.add_argument("-e", "--epics", help="Epic dei dati da scaricare, lasciare vuoto per tutti", nargs="*", default=[])
+arg.add_argument("-n", "--news", help="Scarica le news", action="store_true")
 arguments = arg.parse_args()
 
-database = Database(DB_HOST, DB_NAME, DB_USER, DB_PASS)
-arguments.database and database.import_from_sqlite(arguments.database)
+if not len(sys.argv) > 1:
+    print("❌ Nessun comando specificato. Utilizzare -h per visualizzare l'help.")
+    exit(1)
 
-match arguments.fetch:
-    case "news": fetch_news(database)
-    case "data": fetch_data(database)
-    case _:
-        print("❌ Nessun comando specificato. Utilizzare -h per visualizzare l'help.")
-        exit(1)
+try:
+    database = Database(DB_URL)
+    arguments.epics != None and fetch_data(database, arguments.epics)
+    arguments.news and fetch_news(database)
+except KeyboardInterrupt:
+    print("\n❌ Operazione annullata dall'utente.")
