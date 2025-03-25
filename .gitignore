@@ -1,2 +1,7 @@
 .env
+.venv
 *.csv
+*.db
+*.db-journal
+*.log
+__pycache__
