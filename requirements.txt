@@ -2,3 +2,4 @@ requests
 dotenv
 argparse
 Peewee
+pymysql
