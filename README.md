@@ -44,4 +44,4 @@ Questo progetto è distribuito sotto licenza Creative Commons Attribution-NonCom
 
 Per usi commerciali, è necessario contattare l'autore per ottenere un'autorizzazione esplicita.
 
-Vedi il file [LICENSE](LICENSE) per maggiori dettagli.
+Vedi il file [LICENSE](LICENSE.md) per maggiori dettagli.
