@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import argparse
 
 from database import Database
@@ -56,6 +57,7 @@ def fetch_data(db:Database, epics:list[str]):
 
     total = len(epics) * len(CAPITAL_RESOLUTIONS)
     completed = 0
+    start = time.time()
 
     for epic in epics:
         for resolution in CAPITAL_RESOLUTIONS:
@@ -78,7 +80,12 @@ def fetch_data(db:Database, epics:list[str]):
                 from_date = to_date - CAPITAL_TIMEFRAME_LIMITS[resolution]
 
             completed += 1
-            print(f"📈 Progresso: {completed}/{total} ({completed/total*100:.2f}%)")
+            percent = completed / total
+            delta = time.time() - start
+            remaining = (delta / completed) * (total - completed)
+            delta_str = str(timedelta(seconds=delta))[:-3]
+            remaining_str = str(timedelta(seconds=remaining))[:-3]
+            print(f"🕒 [{delta_str}] Rimasto: {remaining_str} {completed}/{total} ({percent:.2%})")
 
     print("✅ Download di tutti i dati completato!")
 

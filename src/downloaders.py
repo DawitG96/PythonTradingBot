@@ -76,9 +76,6 @@ class CapitalDownloader(Downloader):
         return data
 
     def download_epics(self):
-        if self.database.has_epics():
-            return
-
         response = self.get("markets")
         data = response.json()
         data = transform.from_capital_markets(data["markets"])

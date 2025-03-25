@@ -5,28 +5,12 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "NO ARGS",
+            "name": "Fetch Simple Data",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/src/app.py",
             "console": "integratedTerminal",
-            "args": []
-        },
-        {
-            "name": "Import Database SQLite",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/app.py",
-            "console": "integratedTerminal",
-            "args": ["--database", "localhost.db"]
-        },
-        {
-            "name": "Fetch Data",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "${workspaceFolder}/src/app.py",
-            "console": "integratedTerminal",
-            "args": ["--fetch", "data"]
+            "args": ["--epics", "GOLD", "SILVER"]
         }
     ]
 }

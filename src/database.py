@@ -61,8 +61,10 @@ class Database:
 
 
     def save_market_array(self, data:list[tuple]):
+        '''Save markets in the database with format (epic, symbol, instrumentType, instrumentName) it will truncate the table before inserting the new data'''
         with self.db.atomic():
-            Markets.insert_many(data).on_conflict_ignore().execute()
+            Markets.truncate_table()
+            Markets.insert_many(data).execute()
 
     def save_news_array(self, data:list[tuple]):
         with self.db.atomic():
