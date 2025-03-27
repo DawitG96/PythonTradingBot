@@ -5,6 +5,7 @@ import argparse
 from database import Database
 from dotenv import load_dotenv
 from data_fetcher import fetch_trading, fetch_news
+from downloaders import CapitalDownloader
 
 # Controllo se le variabili d'ambiente sono state impostate
 if not os.getenv("APP_TRADING_BOT"):
@@ -16,14 +17,16 @@ if not os.getenv("APP_TRADING_BOT"):
 # Configurazioni iniziali
 DB_URL = os.getenv("APP_DB_URL")
 NEWS_APIKEY = os.getenv("NEWS_APIKEY")
-CAPITAL_RESOLUTIONS = os.getenv("CAPITAL_RESOLUTIONS").split(",")
 CAPITAL_APIKEY = os.getenv("CAPITAL_APIKEY")
 CAPITAL_EMAIL = os.getenv("CAPITAL_EMAIL")
 CAPITAL_PASSWORD = os.getenv("CAPITAL_PASSWORD")
 
+
 # ======= Main =======
 arg = argparse.ArgumentParser(description="Bot di trading")
-arg.add_argument("-e", "--epics", help="Epic dei dati da scaricare, lasciare vuoto per tutti", nargs="*", default=[])
+grp = arg.add_argument_group()
+grp.add_argument("-e", "--epics", help="Epic dei dati da scaricare, lasciare vuoto per tutti", nargs="*")
+grp.add_argument("-t", "--timeframe", help="Timeframe dei dati da scaricare, lasciare vuoto per DAY", nargs="*", choices=CapitalDownloader.get_timeframe_limit(), default=["DAY"])
 arg.add_argument("-n", "--news", help="Scarica le news", action="store_true")
 arguments = arg.parse_args()
 
@@ -33,7 +36,7 @@ if not len(sys.argv) > 1:
 
 try:
     database = Database(DB_URL)
-    arguments.epics != None and fetch_trading(database, arguments.epics, CAPITAL_RESOLUTIONS)
+    arguments.epics != None and fetch_trading(database, arguments.epics, arguments.timeframe)
     arguments.news and fetch_news(database)
 except KeyboardInterrupt:
     print("\n❌ Operazione annullata dall'utente.")

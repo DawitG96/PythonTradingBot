@@ -88,7 +88,7 @@ def fetch_trading(db:Database, epics:list[str], timeframes:list[str], max_retry:
 
                     data = capital.download_historical_data(epic, resolution, from_date_str, to_date_str)
                     retry = 0
-                    if data is None: #or data <= 0:
+                    if data is None or data <= 0:
                         break
                 except Exception as e:
                     logger.print_with_time(f"\t❌ Errore {retry}/{max_retry} {str_to_print}: {e}")
