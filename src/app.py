@@ -4,7 +4,6 @@ import argparse
 
 from database import Database
 from dotenv import load_dotenv
-from datetime import timedelta
 from data_fetcher import fetch_trading, fetch_news
 
 # Controllo se le variabili d'ambiente sono state impostate
