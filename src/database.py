@@ -41,6 +41,7 @@ class News(Model):
 
 class Database:
     db:peewee.Database
+    prev = 0
 
     def __init__(self, db_URL:str):
         '''
@@ -57,18 +58,20 @@ class Database:
 
     def save_data_array(self, data:list[tuple]):
         with self.db.atomic():
-            HistoricalData.insert_many(data).on_conflict_ignore().execute()
-
+            res = HistoricalData.insert_many(data).on_conflict_ignore().execute()
+            return self.check_if_rows_inserted(len(data), res)
 
     def save_market_array(self, data:list[tuple]):
         '''Save markets in the database with format (epic, symbol, instrumentType, instrumentName) it will truncate the table before inserting the new data'''
         with self.db.atomic():
             Markets.truncate_table()
-            Markets.insert_many(data).execute()
+            res = Markets.insert_many(data).execute()
+            return self.check_if_rows_inserted(len(data), res)
 
     def save_news_array(self, data:list[tuple]):
         with self.db.atomic():
-            News.insert_many(data).on_conflict_ignore().execute()
+            res = News.insert_many(data).on_conflict_ignore().execute()
+            return self.check_if_rows_inserted(len(data), res)
 
     def has_epics(self):
         '''Check if the database has any epic'''
@@ -84,6 +87,11 @@ class Database:
         date = date.scalar()
         return None if date is None else datetime.fromisoformat(date)
 
+    def check_if_rows_inserted(self, rows_to_insert_len:int, result_sql:int):
+        '''Check if rows were inserted in the database'''
+        temp = (result_sql - self.prev) if rows_to_insert_len < result_sql else result_sql
+        self.prev = result_sql
+        return min(temp, rows_to_insert_len)
 
 
 # This test will create a database with two tables: EUR_USD and GBP_USD

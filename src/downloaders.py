@@ -72,8 +72,7 @@ class CapitalDownloader(Downloader):
 
         data = response.json()
         data = transform.from_capital_history(epic, resolution, data["prices"])
-        self.database.save_data_array(data)
-        return data
+        return self.database.save_data_array(data)
 
     def download_epics(self):
         response = self.get("markets")
