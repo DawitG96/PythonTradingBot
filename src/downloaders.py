@@ -2,6 +2,9 @@ import json
 import time
 import requests
 import transform
+import transform
+import logging
+from requests.exceptions import RequestException, ConnectionError, Timeout
 
 from database import Database
 
@@ -12,11 +15,14 @@ class Downloader:
     database:Database
     last_request:float
 
-    def __init__(self, baseURL:str, database:Database=None):
+    def __init__(self, baseURL:str, database:Database=None, max_retries:int=10, retry_delay:float=20.0):
         self.baseURL = baseURL
         self.headers = {}
         self.database = database
         self.last_request = 0.0
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
+
 
         assert self.database is not None, "Database non specificato!"
         assert self.baseURL is not None, "URL non specificato!"
@@ -36,25 +42,56 @@ class Downloader:
             time.sleep(maxSecWait - elapsed)
 
         data = json.dumps(data) if data is not None else None
+
         response = requests.request(method, self.baseURL + url, headers=self.headers, data=data)
         self.last_request = time.time()
 
-        match response.status_code:
-            case 200:
-                return response
-            case 404:
-                return None
-            # TODO gestire eventualmente altri codici di errore
-            case _:
-                raise Exception(f"❌ Error '{url}' {response.status_code}: {response.text}")
+        retries = 0
+        while retries <= self.max_retries:
+            try:
+                response = requests.request(method, self.baseURL + url, headers=self.headers, data=data)
+                self.last_request = time.time()
 
+                match response.status_code:
+                    case 200:
+                        return response
+                    case 404:
+                        return None
+                    case 429:  # Too Many Requests
+                        retry_after = int(response.headers.get('Retry-After', self.retry_delay))
+                        print(f"⚠️ Troppe richieste. Attendo {retry_after} secondi...")
+                        time.sleep(retry_after)
+                        retries += 1
+                        continue
+                    case _:
+                        if retries < self.max_retries:
+                            print(f"⚠️ Errore '{url}' {response.status_code}: {response.text}. Riprovo ({retries+1}/{self.max_retries})...")
+                            retries += 1
+                            time.sleep(self.retry_delay)
+                            continue
+                        raise Exception(f"❌ Error '{url}' {response.status_code}: {response.text}")
+                
+            except (ConnectionError, Timeout) as e:
+                if retries < self.max_retries:
+                    print(f"⚠️ Errore di connessione: {str(e)}. Riprovo ({retries+1}/{self.max_retries}) tra {self.retry_delay} secondi...")
+                    retries += 1
+                    time.sleep(self.retry_delay)
+                    continue
+                raise Exception(f"❌ Errore di connessione dopo {self.max_retries} tentativi: {str(e)}")
+            except RequestException as e:
+                if retries < self.max_retries:
+                    print(f"⚠️ Errore di richiesta: {str(e)}. Riprovo ({retries+1}/{self.max_retries}) tra {self.retry_delay} secondi...")
+                    retries += 1
+                    time.sleep(self.retry_delay)
+                    continue
+                raise Exception(f"❌ Errore di richiesta dopo {self.max_retries} tentativi: {str(e)}")
 
 
 class CapitalDownloader(Downloader):
     '''Downloader per dati storici di https://open-api.capital.com/'''
 
-    def __init__(self, database:Database, api_key:str):
-        super().__init__("https://api-capital.backend-capital.com/api/v1/", database)
+    def __init__(self, database:Database, api_key:str, max_retries:int=10, retry_delay:float=20.0):
+        super().__init__("https://api-capital.backend-capital.com/api/v1/", database, max_retries, retry_delay)
         self.header("Content-Type", "application/json")
         self.header("X-CAP-API-KEY", api_key)
 

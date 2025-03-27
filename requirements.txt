@@ -3,3 +3,4 @@ dotenv
 argparse
 Peewee
 pymysql
+cryptography
