@@ -4,7 +4,7 @@ import sys
 import time
 from datetime import datetime, timedelta, timezone
 
-class WithLogger:
+class IterLoggerWithSave:
     def __init__(self, items:list, stream=sys.stdout, progress_file:str=None):
         self.stream = stream
         self.progress_file = progress_file

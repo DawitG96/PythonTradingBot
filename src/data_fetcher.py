@@ -4,7 +4,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from database import Database
 from downloaders import CapitalDownloader, NewsDownloader
-from classes.logger import WithLogger
+from logger import IterLoggerWithSave
 
 def fetch_trading(db:Database, epics:list[str], timeframes:list[str], max_retry:int=5, retry_delay_s:int=5):
     '''Scarica dati storici dei trading'''
@@ -21,7 +21,7 @@ def fetch_trading(db:Database, epics:list[str], timeframes:list[str], max_retry:
         epics = db.get_all_epics()
 
     combinations = [(epic, resolution) for epic in epics for resolution in timeframes]
-    logger = WithLogger(combinations, progress_file=".fetch_data.log")
+    logger = IterLoggerWithSave(combinations, progress_file=".fetch_data.log")
 
     for epic, resolution in logger:
         to_date = db.get_oldest_date(epic, resolution)
