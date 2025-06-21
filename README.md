@@ -1,56 +1,82 @@
-# PythonTradingBot
+# Python Trading Bot
 
-Script usato per prendre delle informazioni di mercato e di notizie e salvarle in un Database locale (sqlite3).\
-I dati sono presi da Capital.com e da NewsAPI.
+Un bot progettato per raccogliere dati di mercato da **Capital.com** e notizie finanziarie da **NewsAPI**, per poi archiviarli in un database locale SQLite.
 
-L'obiettivo futuro di questo script è di creare un modello di AI per la predizione dei valori di trading usando le informazioni scaricate come dataset.
+L'obiettivo finale è utilizzare i dati raccolti come dataset per addestrare un modello di Intelligenza Artificiale in grado di prevedere le tendenze del mercato.
 
 > [!IMPORTANT]
-> La versione di Python usata è la [3.10.12](https://www.python.org/downloads/release/python-31012/).
+> È richiesta una versione di Python `3.10.12` o superiore. Puoi scaricarla da [python.org](https://www.python.org/downloads/release/python-31012/).
+
+## Funzionalità Principali
+
+-   **Raccolta Dati**: Automatizza il download di dati di mercato e notizie.
+-   **Archiviazione Locale**: Salva tutte le informazioni in un database SQLite (`localhost.db`) per un facile accesso.
+-   **API Server**: Espone i dati raccolti tramite un'API RESTful costruita con FastAPI.
+-   **Web App**: Fornisce un'interfaccia web interattiva, basata su Streamlit, per visualizzare i dati.
 
 ## Installazione
 
-1. Clona il repository:
+1.  **Clona il repository**
     ```bash
     git clone https://github.com/tuo-username/Capital.com-PythonTradingBot.git
     cd Capital.com-PythonTradingBot
     ```
 
-2. Crea un ambiente virtuale e attivalo:
+2.  **Crea e attiva un ambiente virtuale**
     ```bash
+    # Crea l'ambiente
     python -m venv venv
-    source venv/bin/activate  # Su Windows usa `venv\Scripts\activate`
+
+    # Attivalo (Linux/macOS)
+    source venv/bin/activate
+
+    # Attivalo (Windows)
+    # venv\Scripts\activate
     ```
 
-3. Installa le dipendenze:
+3.  **Installa le dipendenze**
     ```bash
     pip install -r requirements.txt
     ```
 
+## Configurazione
+
+Prima di eseguire l'applicazione, è necessario configurare le proprie chiavi API.
+
+1.  Crea una copia del file di esempio `.env.example` e rinominala in `.env`.
+    ```bash
+    cp .env.example .env
+    ```
+2.  Apri il file `.env` e inserisci le tue chiavi API per Capital.com e NewsAPI.
+
 ## Utilizzo
 
-1. Configura le tue API keys per Capital.com e NewsAPI nel file `.env`. Un esempio è presente nel [.env.example](.env.example)
+L'applicazione è suddivisa in tre componenti principali che possono essere eseguiti separatamente.
 
-2. Esegui lo script principale:
+1.  **Raccolta Dati**
+    Esegui lo script principale per avviare la raccolta dei dati. Le informazioni verranno salvate nel database `localhost.db`.
     ```bash
     python3 src/app.py -e
     ```
-3. I dati di mercato e le notizie verranno salvati nel database locale `localhost.db`.
 
-4. Esegui api server
-```bash
+2.  **Avvio dell'API Server**
+    Per accedere ai dati tramite API, avvia il server Uvicorn.
+    ```bash
     uvicorn src.api:app --reload
-```
+    ```
+    L'API sarà disponibile all'indirizzo `http://127.0.0.1:8000`.
 
-5. Esegui webapp
-```bash
-streamlit run src/webapp.py
-```
+3.  **Avvio della Web App**
+    Per visualizzare i dati attraverso un'interfaccia grafica, esegui l'app Streamlit.
+    ```bash
+    streamlit run src/webapp.py
+    ```
+    L'applicazione web sarà accessibile nel tuo browser.
 
 ## Licenza
 
-Questo progetto è distribuito sotto licenza Creative Commons Attribution-NonCommercial (CC BY-NC). Questa licenza permette ad altri di remixare, adattare e sviluppare il tuo lavoro per scopi non commerciali. Anche se le loro nuove opere devono riconoscerti e non possono essere utilizzate commercialmente, non devono concedere in licenza le loro opere derivate con gli stessi termini.
+Questo progetto è distribuito sotto la licenza **Creative Commons Attribution-NonCommercial (CC BY-NC)**.
 
-Per usi commerciali, è necessario contattare l'autore per ottenere un'autorizzazione esplicita.
+Questa licenza consente di remixare, adattare e sviluppare l'opera per scopi non commerciali, a condizione che l'autore originale venga riconosciuto. Per qualsiasi uso commerciale, è necessario ottenere un'autorizzazione esplicita.
 
-Vedi il file [LICENSE](LICENSE.md) per maggiori dettagli.
+Per maggiori dettagli, consulta il file [LICENSE](LICENSE.md).
