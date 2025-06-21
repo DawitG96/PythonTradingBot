@@ -33,10 +33,19 @@ L'obiettivo futuro di questo script è di creare un modello di AI per la predizi
 
 2. Esegui lo script principale:
     ```bash
-    python3 src/app.py
+    python3 src/app.py -e
     ```
-
 3. I dati di mercato e le notizie verranno salvati nel database locale `localhost.db`.
+
+4. Esegui api server
+```bash
+    uvicorn src.api:app --reload
+```
+
+5. Esegui webapp
+```bash
+streamlit run src/webapp.py
+```
 
 ## Licenza
 

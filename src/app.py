@@ -64,10 +64,14 @@ def fetch_data(db:Database, epics:list[str], timeframes:list[str]):
                 from_date_str = from_date.strftime("%Y-%m-%dT%H:%M:%S")
                 to_date_str = to_date.strftime("%Y-%m-%dT%H:%M:%S")
 
-                data = capital.download_historical_data(epic, resolution, from_date_str, to_date_str)
-                if data is None or data <= 0:
+                downloaded_data = capital.download_historical_data(epic, resolution, from_date_str, to_date_str)
+                
+                if not downloaded_data:
                     break
-                print(f"\t📊 Scaricato {epic}:{resolution} da {from_date_str} a {to_date_str}...")
+                
+                db.save_data_array(downloaded_data)
+
+                print(f"\t📊 Scaricati {len(downloaded_data)} record per {epic}:{resolution} da {from_date_str} a {to_date_str}...")
 
                 to_date = db.get_oldest_date(epic, resolution) - timedelta(seconds=1)
                 from_date = to_date - CAPITAL_TIMEFRAME_LIMITS[resolution]
@@ -89,7 +93,7 @@ def fetch_data(db:Database, epics:list[str], timeframes:list[str]):
 arg = argparse.ArgumentParser(description="Bot di trading")
 grp = arg.add_argument_group()
 grp.add_argument("-e", "--epics", help="Epic dei dati da scaricare, lasciare vuoto per tutti", nargs="*")
-grp.add_argument("-t", "--timeframe", help="Timeframe dei dati da scaricare, lasciare vuoto per DAY", nargs="*", choices=CAPITAL_TIMEFRAME_LIMITS, default="DAY")
+grp.add_argument("-t", "--timeframe", help="Timeframe dei dati da scaricare, lasciare vuoto per DAY", nargs="*", choices=CAPITAL_TIMEFRAME_LIMITS.keys(), default=["DAY"])
 arg.add_argument("-n", "--news", help="Scarica le news", action="store_true")
 arguments = arg.parse_args()
 

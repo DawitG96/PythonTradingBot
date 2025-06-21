@@ -1,3 +1,23 @@
+import pandas as pd
+
+def calculate_pivot_points(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calcola i Pivot Points standard basati sui dati del giorno precedente.
+    Questa funzione si aspetta un DataFrame con colonne 'high', 'low', 'close'.
+    """
+    # Il Pivot Point si basa sui dati del periodo precedente
+    prev_high = df['high'].shift(1)
+    prev_low = df['low'].shift(1)
+    prev_close = df['close'].shift(1)
+
+    # Calcolo dei Pivot Points
+    pivot = (prev_high + prev_low + prev_close) / 3
+    df['resistance'] = (2 * pivot) - prev_low
+    df['support'] = (2 * pivot) - prev_high
+    
+    return df
+
+
 
 def from_capital_history(epic:str, resolution:str, data:list[dict]) -> dict:
     '''Trasforma i dati storici di Capital.com in tuple per il database'''

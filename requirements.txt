@@ -3,3 +3,9 @@ dotenv
 argparse
 Peewee
 pymysql
+pandas
+ta
+streamlit
+setuptools
+newsapi-python textblob
+tradingview-ta yfinance
