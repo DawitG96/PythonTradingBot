@@ -1,15 +1,92 @@
 import peewee
 from datetime import datetime
 from playhouse.db_url import connect
-from peewee import Model, IntegerField, CharField, FloatField, CompositeKey, AutoField
+from peewee import Model, IntegerField, CharField, FloatField, CompositeKey, AutoField, DateTimeField, BooleanField, ForeignKeyField
+from playhouse.fields import JSONField
 
 class Markets(Model):
     id = AutoField()
-    epic = CharField(16, index=True)
-    symbol = CharField(16)
-    instrumentType = CharField(32)
-    instrumentName = CharField(256)
+    epic = CharField(primary_key=True)
+    instrumentName = CharField()
+    instrumentType = CharField()
+    marketStatus = CharField()
+    marketCap = FloatField(null=True)
+    revenue = FloatField(null=True)
+    peRatio = FloatField(null=True)
+    dividend = FloatField(null=True)
+    sector = CharField(null=True)
+    country = CharField(null=True)
+    currency = CharField(null=True)
+    updated_at = DateTimeField(default=datetime.now)
+    
+    class Meta:
+        table_name = 'markets'
 
+class TradingStrategies(BaseModel):
+    """Configurazione delle strategie di trading"""
+    id = AutoField(primary_key=True)
+    name = CharField()  # Es: "RSI_BOLLINGER_COMBO"
+    epic = CharField()
+    strategy_type = CharField()  # RSI, BOLLINGER, MACD, COMBO
+    parameters = JSONField()  # Parametri specifici della strategia
+    is_active = BooleanField(default=True)
+    created_at = DateTimeField(default=datetime.now)
+    
+    class Meta:
+        table_name = 'trading_strategies'
+
+class TradingPositions(BaseModel):
+    """Posizioni di trading simulate"""
+    id = AutoField(primary_key=True)
+    epic = CharField()
+    strategy_id = ForeignKeyField(TradingStrategies, backref='positions')
+    
+    # Dati di apertura
+    entry_time = DateTimeField()
+    entry_price = FloatField()
+    position_type = CharField()  # BUY o SELL
+    position_size = FloatField()  # Quantità investita
+    
+    # Dati tecnici al momento dell'apertura
+    rsi_value = FloatField(null=True)
+    bollinger_position = CharField(null=True)  # UPPER, LOWER, MIDDLE
+    support_level = FloatField(null=True)
+    resistance_level = FloatField(null=True)
+    volume_indicator = CharField(null=True)  # HIGH, LOW, NORMAL
+    
+    # Dati di chiusura
+    exit_time = DateTimeField(null=True)
+    exit_price = FloatField(null=True)
+    profit_loss = FloatField(null=True)
+    profit_loss_percentage = FloatField(null=True)
+    
+    # Metadati
+    is_open = BooleanField(default=True)
+    close_reason = CharField(null=True)  # STOP_LOSS, TAKE_PROFIT, STRATEGY_SIGNAL
+    success_probability = FloatField(null=True)  # Probabilità di successo calcolata
+    
+    created_at = DateTimeField(default=datetime.now)
+    updated_at = DateTimeField(default=datetime.now)
+    
+    class Meta:
+        table_name = 'trading_positions'
+
+class PortfolioConfig(BaseModel):
+    """Configurazione del portfolio virtuale"""
+    id = AutoField(primary_key=True)
+    name = CharField(default="Virtual Portfolio")
+    initial_capital = FloatField()
+    current_capital = FloatField()
+    max_position_size = FloatField()  # Massimo per singola posizione
+    risk_percentage = FloatField(default=2.0)  # % di rischio per operazione
+    check_interval = IntegerField(default=30)  # Secondi tra controlli
+    is_active = BooleanField(default=True)
+    created_at = DateTimeField(default=datetime.now)
+    updated_at = DateTimeField(default=datetime.now)
+    
+    class Meta:
+        table_name = 'portfolio_config'
+        
 class HistoricalData(Model):
     epic = CharField(16)
     resolution = CharField(16)

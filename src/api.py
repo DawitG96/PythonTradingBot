@@ -8,6 +8,8 @@ from .database import Database, HistoricalData, Markets
 from .strategies import moving_average_crossover
 from .transform import calculate_pivot_points
 from .providers import TradingViewAnalysis, YahooFinanceNews # NUOVO IMPORT
+from trading_system import TradingSystem
+from database import Markets, TradingPositions, PortfolioConfig
 
 # Carica le variabili d'ambiente per ottenere la stringa di connessione al DB
 load_dotenv()
@@ -171,3 +173,106 @@ def get_all_signals(timeframe: str = "DAY"):
             continue
 
     return {"active_signals": active_signals}
+
+trading_system = TradingSystem(db)
+
+@app.get("/markets/search")
+def search_markets(query: str = "", limit: int = 50):
+    """Cerca markets nel database"""
+    markets_query = Markets.select()
+    
+    if query:
+        markets_query = markets_query.where(
+            (Markets.epic.contains(query.upper())) |
+            (Markets.instrumentName.contains(query))
+        )
+    
+    markets = list(markets_query.limit(limit).dicts())
+    return {"markets": markets}
+
+@app.get("/trading/analyze/{epic}")
+def analyze_epic(epic: str, strategy: str = "COMBINED"):
+    """Analizza un epic con la strategia specificata"""
+    result = trading_system.analyze_epic(epic, strategy)
+    return result
+
+@app.post("/trading/open-position/{epic}")
+def open_position(epic: str, strategy: str = "COMBINED"):
+    """Analizza e potenzialmente apre una posizione"""
+    analysis = trading_system.analyze_epic(epic, strategy)
+    
+    if analysis.get('error'):
+        raise HTTPException(status_code=400, detail=analysis['error'])
+    
+    position = trading_system.open_position(analysis)
+    
+    return {
+        "analysis": analysis,
+        "position_opened": position is not None,
+        "position_id": position.id if position else None
+    }
+
+@app.get("/trading/positions")
+def get_positions(open_only: bool = False):
+    """Ottiene le posizioni di trading"""
+    query = TradingPositions.select()
+    
+    if open_only:
+        query = query.where(TradingPositions.is_open == True)
+    
+    positions = list(query.order_by(TradingPositions.created_at.desc()).dicts())
+    return {"positions": positions}
+
+@app.post("/trading/close-position/{position_id}")
+def close_position_manual(position_id: int):
+    """Chiude manualmente una posizione"""
+    try:
+        position = TradingPositions.get_by_id(position_id)
+        if not position.is_open:
+            raise HTTPException(status_code=400, detail="Posizione già chiusa")
+        
+        closed_position = trading_system.close_position(position, "MANUAL")
+        return {"success": True, "position": closed_position}
+        
+    except TradingPositions.DoesNotExist:
+        raise HTTPException(status_code=404, detail="Posizione non trovata")
+
+@app.get("/trading/portfolio")
+def get_portfolio():
+    """Ottiene il riepilogo del portfolio"""
+    return trading_system.get_portfolio_summary()
+
+@app.post("/trading/check-positions")
+def check_positions():
+    """Controlla e chiude posizioni se necessario"""
+    closed_positions = trading_system.check_and_close_positions()
+    return {
+        "checked": datetime.now(),
+        "closed_positions": len(closed_positions),
+        "positions": [p.id for p in closed_positions]
+    }
+
+@app.put("/trading/portfolio/config")
+def update_portfolio_config(
+    initial_capital: float = None,
+    max_position_size: float = None,
+    risk_percentage: float = None,
+    check_interval: int = None
+):
+    """Aggiorna la configurazione del portfolio"""
+    portfolio = trading_system.portfolio
+    
+    if initial_capital is not None:
+        portfolio.initial_capital = initial_capital
+        portfolio.current_capital = initial_capital
+    if max_position_size is not None:
+        portfolio.max_position_size = max_position_size
+    if risk_percentage is not None:
+        portfolio.risk_percentage = risk_percentage
+    if check_interval is not None:
+        portfolio.check_interval = check_interval
+    
+    portfolio.updated_at = datetime.now()
+    portfolio.save()
+    
+    return {"success": True, "portfolio": portfolio.__data__}

@@ -9,3 +9,5 @@ streamlit
 setuptools
 newsapi-python textblob
 tradingview-ta yfinance
+talib==0.4.26
+plotly==5.17.0
